@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { getUsers } from '../services/users.js'
 
 const useUsers = () => {
@@ -10,22 +10,35 @@ const useUsers = () => {
   const [searchCountry, setSearchCountry] = useState('')
   const originalUsers = useRef([])
 
-  const filterByCountry = searchCountry
-    ? users.filter(user => user.location.country.toLowerCase().includes(searchCountry.toLowerCase()))
-    : users
-
-  const sortUsers = sorting
-    ? [...filterByCountry].sort((a, b) => {
-        return a.location.country.localeCompare(b.location.country)
-      })
-    : filterByCountry
-
-  const changeSorting = (field) => {
-
+  const compareProperties = {
+    NONE: null,
+    COUNTRY: user => user.location.country,
+    NAME: user => user.name.first,
+    LAST: user => user.name.last
+  }
+  const toggleSortByCountry = () => {
+    const newSortingValue = sorting === null ? 'COUNTRY' : null
+    setSorting(newSortingValue)
   }
 
-  const filterUsersByCountry = (country) => {
-    setSearchCountry(country)
+  const handleChangeSort = (sort) => {
+    if (sort === sorting) {
+      setSorting(null)
+      return
+    }
+    setSorting(sort)
+  }
+  const deleteUser = (email) => {
+    const newUsers = users.filter(user => user.email !== email)
+    setUsers(newUsers)
+  }
+
+  const toggleShowColors = () => {
+    setShowColors(!showColors)
+  }
+
+  const resetState = () => {
+    setUsers(originalUsers.current)
   }
 
   useEffect(() => {
@@ -42,22 +55,24 @@ const useUsers = () => {
     fetchUsers()
   }, [])
 
-  const deleteUser = (email) => {
-    const newUsers = users.filter(user => user.email !== email)
-    setUsers(newUsers)
-  }
+  const filterByCountry = useMemo(() => {
+    return searchCountry != null && searchCountry.length > 0
 
-  const toggleShowColors = () => {
-    setShowColors(!showColors)
-  }
+      ? users.filter(user => user.location.country.toLowerCase().includes(searchCountry.toLowerCase()))
+      : users
+  }, [users, searchCountry])
 
-  const resetState = () => {
-    setUsers(originalUsers.current)
-  }
+  const sortUsers = useMemo(() => {
+    if (sorting === compareProperties.NONE) return filterByCountry
 
-  const toggleSortByCountry = () => {
-    const newSortingValue = sorting === null ? 'country' : null
-    setSorting(newSortingValue)
+    return filterByCountry.toSorted((a, b) => {
+      const extractProperty = compareProperties[sorting]
+      return extractProperty(a).localeCompare(extractProperty(b))
+    })
+  }, [sorting, filterByCountry])
+
+  const filterUsersByCountry = (country) => {
+    setSearchCountry(country)
   }
 
   return {
@@ -71,7 +86,9 @@ const useUsers = () => {
     resetState,
     toggleSortByCountry,
     filterUsersByCountry,
-    filterByCountry
+    filterByCountry,
+    handleChangeSort,
+    compareProperties
   }
 }
 

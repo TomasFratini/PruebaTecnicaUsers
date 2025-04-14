@@ -1,13 +1,13 @@
-export function UsersList ({ users, showColors, deleteUser }) {
+export function UsersList ({ users, showColors, deleteUser, handleChangeSort }) {
   return (
 
     <table className='table'>
       <thead>
         <tr>
           <th>Foto</th>
-          <th>Nombre</th>
-          <th>Apellido</th>
-          <th>Pais</th>
+          <th className='pointer' onClick={() => { handleChangeSort('NAME') }}>Nombre</th>
+          <th className='pointer' onClick={() => { handleChangeSort('LAST') }}>Apellido</th>
+          <th className='pointer' onClick={() => { handleChangeSort('COUNTRY') }}>Pais</th>
           <th>Accion</th>
         </tr>
       </thead>
